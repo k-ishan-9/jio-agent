@@ -1,0 +1,19 @@
+fastapi==0.115.0
+uvicorn[standard]>=0.34.0
+pydantic==2.9.2
+faiss-cpu==1.12.0
+numpy>=1.26.4
+google-genai>=1.14.0
+google-adk==1.0.0
+requests==2.32.3
+beautifulsoup4==4.12.3
+python-dotenv==1.0.1
+celery>=5.3.6
+redis>=5.0.0
+
+# Notes:
+# - Exact google-adk / google-genai versions may need adjustment — these
+#   libraries update frequently. Run `pip index versions google-adk` and
+#   `pip index versions google-genai` if install fails on these exact pins,
+#   and take the latest available instead.
+# - faiss-cpu has no GPU dependency, installs cleanly on standard machines.

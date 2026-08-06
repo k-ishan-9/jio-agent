@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JioFiber &amp; Jio AirFiber Broadband Plans</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/widget.css">
+  <style>
+    :root {
+      --jio-blue: #0054B4;
+      --jio-blue-dark: #0A2885;
+      --jio-blue-light: #EBF3FF;
+      --jio-red: #E31837;
+      --text-dark: #1F2937;
+      --text-light: #4B5563;
+      --bg-light: #F9FAFB;
+      --white: #FFFFFF;
+      --radius: 16px;
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text-dark);
+      background-color: var(--bg-light);
+      line-height: 1.6;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+    }
+
+    /* ===== NAVIGATION ===== */
+    header {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .jio-logo-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--jio-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+    }
+
+    .logo-text {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--jio-blue-dark);
+      font-family: 'Outfit', sans-serif;
+      letter-spacing: -0.5px;
+    }
+
+    nav ul {
+      display: flex;
+      list-style: none;
+      gap: 28px;
+      align-items: center;
+    }
+
+    nav ul li a {
+      text-decoration: none;
+      color: var(--text-light);
+      font-size: 14.5px;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    nav ul li a:hover, nav ul li a.active {
+      color: var(--jio-blue);
+    }
+
+    .nav-cta {
+      background: var(--jio-blue);
+      color: white;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 13.5px;
+      transition: var(--transition);
+      border: none;
+      cursor: pointer;
+    }
+
+    .nav-cta:hover {
+      background: var(--jio-blue-dark);
+    }
+
+    /* ===== HEADER ===== */
+    .plans-header {
+      background: linear-gradient(135deg, var(--jio-blue-dark), var(--jio-blue));
+      color: white;
+      padding: 60px 24px 100px;
+      text-align: center;
+    }
+
+    .plans-header h1 {
+      font-size: 38px;
+      margin-bottom: 12px;
+    }
+
+    .plans-header p {
+      font-size: 16px;
+      opacity: 0.9;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ===== TABS & CONTENT ===== */
+    .plans-container {
+      max-width: 1200px;
+      margin: -60px auto 80px;
+      padding: 0 24px;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 40px;
+      overflow-x: auto;
+      padding: 10px;
+      scrollbar-width: none;
+    }
+
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      background: white;
+      border: 1px solid rgba(229, 231, 235, 0.8);
+      color: var(--text-light);
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 14.5px;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+    }
+
+    .tab-btn:hover {
+      border-color: var(--jio-blue);
+      color: var(--jio-blue);
+    }
+
+    .tab-btn.active {
+      background: var(--jio-blue);
+      color: white;
+      border-color: var(--jio-blue);
+      box-shadow: 0 4px 14px rgba(0, 84, 180, 0.25);
+    }
+
+    .plan-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: tab-fade-in 0.3s ease-out;
+    }
+
+    @keyframes tab-fade-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== PLAN CARDS ===== */
+    .plan-card {
+      background: white;
+      border-radius: var(--radius);
+      border: 1px solid rgba(229, 231, 235, 0.8);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: var(--transition);
+    }
+
+    .plan-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 40px rgba(0, 84, 180, 0.06);
+      border-color: rgba(0, 84, 180, 0.15);
+    }
+
+    .plan-badge {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      background: #FFF1F3;
+      color: var(--jio-red);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .plan-speed-badge {
+      display: inline-block;
+      background: var(--jio-blue-light);
+      color: var(--jio-blue);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 8px;
+      width: fit-content;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    .plan-price-row {
+      margin-bottom: 20px;
+    }
+
+    .plan-price {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--jio-blue-dark);
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .plan-price span {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-light);
+    }
+
+    .plan-benefits {
+      border-top: 1px solid #F3F4F6;
+      border-bottom: 1px solid #F3F4F6;
+      padding: 16px 0;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-grow: 1;
+    }
+
+    .benefit-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+
+    .benefit-item .label {
+      color: var(--text-light);
+    }
+
+    .benefit-item .value {
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    .benefit-desc {
+      font-size: 12.5px;
+      color: var(--text-light);
+      line-height: 1.45;
+      background: var(--bg-light);
+      padding: 10px;
+      border-radius: 8px;
+      border-left: 3.5px solid var(--jio-blue);
+    }
+
+    .ott-badges {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .ott-badge-item {
+      background: #F3F4F6;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: var(--text-dark);
+    }
+
+    .btn-book {
+      width: 100%;
+      background: var(--jio-blue);
+      color: white;
+      text-align: center;
+      border: none;
+      padding: 12px;
+      border-radius: 25px;
+      font-weight: 600;
+      font-size: 14.5px;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: auto;
+      text-decoration: none;
+    }
+
+    .btn-book:hover {
+      background: var(--jio-blue-dark);
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background: var(--jio-blue-dark);
+      color: rgba(255, 255, 255, 0.7);
+      padding: 60px 24px 40px;
+      font-size: 14px;
+      border-top: 4px solid var(--jio-red);
+    }
+
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .footer-links li a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .footer-links li a:hover {
+      color: white;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      font-size: 12.5px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 24px;
+      width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .nav-container { flex-direction: column; gap: 16px; }
+      nav ul { flex-wrap: wrap; justify-content: center; gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVIGATION HEADER -->
+  <header>
+    <div class="nav-container">
+      <a href="/" class="logo-container">
+        <div class="jio-logo-badge">J</div>
+        <span class="logo-text">Jio</span>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/prepaid">Prepaid</a></li>
+          <li><a href="/fiber" class="active">Fiber &amp; AirFiber</a></li>
+          <li><a href="/business">Business</a></li>
+          <li><a href="/apps">Apps</a></li>
+        </ul>
+      </nav>
+      <button class="nav-cta" onclick="openAssistant()">Ask Assistant</button>
+    </div>
+  </header>
+
+  <!-- HEAD SECTION -->
+  <section class="plans-header">
+    <h1>JioFiber &amp; Jio AirFiber</h1>
+    <p>Supercharge your home with gigabit wired broadband or high-speed wireless 5G connection. Complete entertainment packages bundled with premium OTT apps.</p>
+  </section>
+
+  <!-- PLANS SECTION -->
+  <main class="plans-container">
+    <!-- Tab Controls -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('airfiber')">Jio AirFiber (Wireless 5G)</button>
+      <button class="tab-btn" onclick="switchTab('wired-fiber')">JioFiber (Wired Broadband)</button>
+    </div>
+
+    <!-- TAB: Jio AirFiber -->
+    <div id="airfiber" class="tab-content active">
+      <div class="plan-grid">
+        <!-- AirFiber 1 -->
+        <div class="plan-card">
+          <div class="plan-speed-badge">30 Mbps</div>
+          <div class="plan-badge">Popular</div>
+          <div class="plan-price-row">
+            <div class="plan-price">₹599<span> / month</span></div>
+          </div>
+          <div class="plan-benefits">
+            <div class="benefit-item">
+              <span class="label">Speed</span>
+              <span class="value">30 Mbps (Unl.)</span>
+            </div>
+            <div class="benefit-item">
+              <span class="label">TV Channels</span>
+              <span class="value">800+ Channels</span>
+            </div>
+            <div class="benefit-item">
+              <span class="label">OTT Apps</span>
+              <span class="value">13 Apps included</span>
+            </div>
+            <div class="benefit-desc">
+              High-speed wireless 5G broadband for home. Includes Disney+ Hotstar, SonyLIV, ZEE5, JioCinema, and 9 other platforms.
+            </div>
+            <div class="ott-badges">
+              <span class="ott-badge-item">Disney+ Hotstar</span>
+              <span class="ott-badge-item">SonyLIV</span>
+              <span class="ott-badge-item">ZEE5</span>
+              <span class="ott-badge-item">JioCinema</span>
+            </div>
+          </div>
+          <a href="#" class="btn-book">Book Now</a>
+        </div>
+
+        <!-- AirFiber 2 -->
+        <div class="plan-card">
+          <div class="plan-speed-badge">100 Mbps</div>
+          <div class="plan-price-row">
+            <div class="plan-price">₹899<span> / month</span></div>
+          </div>
+          <div class="plan-benefits">
+            <div class="benefit-item">
+              <span class="label">Speed</span>
+              <span class="value">100 Mbps (Unl.)</span>
+            </div>
+            <div class="benefit-item">
+              <span class="label">TV Channels</span>
+              <span class="value">800+ Channels</span>
+            </div>
+            <div class="benefit-item">
+              <span class="label">OTT Apps</span>
+              <span class="value">13 Apps included</span>
+            </div>
+            <div class="benefit-desc">
+              Fast 100 Mbps speed suited for multi-device streaming, gaming, and working from home. Includes Hotstar, SonyLIV, Zee5, etc.
+            </div>
+            <div class="ott-badges">
+              <span class="ott-badge-item">Disney+ Hotstar</span>
+              <span class="ott-badge-item">SonyLIV</span>
+              <span class="ott-badge-item">ZEE5</span>
+              <span class="ott-badge-item">JioCinema</span>
+            </div>
+          </div>
+          <a href="#" class="btn-book">Book Now</a>
+        </div>
+
+        <!-- AirFiber 3 (AirFiber Max) -->
+        <div class="plan-card">
+          <div class="plan-speed-badge">300 Mbps</div>
+          <div class="plan-badge">Max Speed</div>
+          <div class="plan-price-row">
+            <div class="plan-price">₹1499<span> / month</span></div>
+          </div>
+          <div class="plan-benefits">
+            <div class="benefit-item">
+              <span class="label">Speed</span>
+              <span class="value">300 Mbps (Unl.)</span>
+            </div>
+            <div class="benefit-item">
+              <span class="label">TV Channels</span>
+              <span class="value">800+ Channels</span>
+            </div>
+            <div class="benefit-item">
+              <span class="label">Premium OTT</span>
+              <span class="value">Netflix + Amazon Prime</span>
+            </div>
+            <div class="benefit-desc">
+              Jio AirFiber Max plan with blazing fast 300 Mbps. Premium OTT apps bundled: Netflix (Basic), Amazon Prime Lite, and Disney+ Hotstar.
+            </div>
+            <div class="ott-badges">
+              <span class="ott-badge-item">Netflix</span>
+              <span class="ott-badge-item">Prime Lite</span>
+              <span class="ott-badge-item">Disney+ Hotstar</span>
+              <span class="ott-badge-item">SonyLIV</span>
+            </div>
+          </div>
+          <a href="#" class="btn-book">Book Now</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: JioFiber (Wired) -->
+    <div id="wired-fiber" class="tab-content">
+      <div class="plan-grid">
+        <!-- Wired 1 -->
+        <div class="plan-card">
+          <div class="plan-speed-badge">30 Mbps</div>
+          <div class="plan-price-row">
+            <div class="plan-price">₹399<span> / month</span></div>
+          </div>
+          <div class="plan-benefits">
+            <div class="benefit-item">
+              <span class="label">Speed</span>
+              <span class="value">30 Mbps (Sym.)</span>
+            </div>
+            <div class="benefit-item">
+              <span class="label">Data</span>
+              <span class="value">Unlimited</span>
+            </div>
+            <div class="benefit-item">
+              <span class="label">Voice</span>
+              <span class="value">Free Landline Calls</span>
+            </div>
+            <div class="benefit-desc">
+              Affordable wired broadband plan with symmetrical download and upload speeds (30 Mbps). Reliable connectivity.
+            </div>
+          </div>
+          <a href="#" class="btn-book">Book Now</a>
+        </div>
+
+        <!-- Wired 2 -->
+        <div class="plan-card">
+          <div class="plan-speed-badge">150 Mbps</div>
+          <div class="plan-badge">Best Value</div>
+          <div class="plan-price-row">
+            <div class="plan-price">₹999<span> / month</span></div>
+          </div>
+          <div class="plan-benefits">
+            <div class="benefit-item">
+              <span class="label">Speed</span>
+              <span class="value">150 Mbps (Sym.)</span>
+            </div>
+            <div class="benefit-item">
+              <span class="label">OTT Apps</span>
+              <span class="value">Amazon Prime + 15 Apps</span>
+            </div>
+            <div class="benefit-item">
+              <span class="label">Voice</span>
+              <span class="value">Free Landline Calls</span>
+            </div>
+            <div class="benefit-desc">
+              Super-fast wired broadband with symmetric speed. Includes Amazon Prime Lite, Disney+ Hotstar, SonyLIV, Zee5, and more.
+            </div>
+            <div class="ott-badges">
+              <span class="ott-badge-item">Prime Lite</span>
+              <span class="ott-badge-item">Disney+ Hotstar</span>
+              <span class="ott-badge-item">SonyLIV</span>
+              <span class="ott-badge-item">ZEE5</span>
+            </div>
+          </div>
+          <a href="#" class="btn-book">Book Now</a>
+        </div>
+
+        <!-- Wired 3 -->
+        <div class="plan-card">
+          <div class="plan-speed-badge">1 Gbps</div>
+          <div class="plan-badge">Gigabit</div>
+          <div class="plan-price-row">
+            <div class="plan-price">₹3999<span> / month</span></div>
+          </div>
+          <div class="plan-benefits">
+            <div class="benefit-item">
+              <span class="label">Speed</span>
+              <span class="value">1 Gbps (Sym.)</span>
+            </div>
+            <div class="benefit-item">
+              <span class="label">Premium OTT</span>
+              <span class="value">Netflix Standard + Prime</span>
+            </div>
+            <div class="benefit-item">
+              <span class="label">Voice</span>
+              <span class="value">Free Landline Calls</span>
+            </div>
+            <div class="benefit-desc">
+              Ultrafast gigabit connectivity for heavy smart homes, streaming in 8K, and high-speed data backup. Netflix (Standard) and Prime included.
+            </div>
+            <div class="ott-badges">
+              <span class="ott-badge-item">Netflix (Std)</span>
+              <span class="ott-badge-item">Prime</span>
+              <span class="ott-badge-item">Disney+ Hotstar</span>
+              <span class="ott-badge-item">SonyLIV</span>
+            </div>
+          </div>
+          <a href="#" class="btn-book">Book Now</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-container">
+      <ul class="footer-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/prepaid">Prepaid Mobile</a></li>
+        <li><a href="/fiber">JioFiber</a></li>
+        <li><a href="/business">JioBusiness</a></li>
+        <li><a href="/apps">Jio Apps</a></li>
+      </ul>
+      <div class="footer-bottom">
+        &copy; 2026 Reliance Jio Infocomm Ltd. Demo Project - RAG AI Agent with FastAPI + FAISS + Google ADK.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById(tabId).classList.add('active');
+      
+      const eventTarget = window.event.currentTarget;
+      if (eventTarget) {
+        eventTarget.classList.add('active');
+      }
+    }
+  </script>
+  <script src="/static/widget.js" defer></script>
+</body>
+</html>

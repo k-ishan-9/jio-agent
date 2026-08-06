@@ -1,0 +1,15 @@
+# Never commit secrets
+.env
+
+# Virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# Data files (large, and Drive-sourced — not meant for git)
+data/*.db
+data/*.faiss
+data/*.index
+data/*_metadata.json
+data/jio_faiss_index/
+data/raw_data/

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jio - Together for a Better Tomorrow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/widget.css">
+  <style>
+    :root {
+      --jio-blue: #0054B4;
+      --jio-blue-dark: #0A2885;
+      --jio-blue-light: #EBF3FF;
+      --jio-red: #E31837;
+      --text-dark: #1F2937;
+      --text-light: #4B5563;
+      --bg-light: #F9FAFB;
+      --white: #FFFFFF;
+      --radius: 16px;
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text-dark);
+      background-color: var(--bg-light);
+      line-height: 1.6;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+    }
+
+    /* ===== NAVIGATION ===== */
+    header {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .jio-logo-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--jio-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      box-shadow: 0 4px 10px rgba(0, 84, 180, 0.3);
+    }
+
+    .logo-text {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--jio-blue-dark);
+      font-family: 'Outfit', sans-serif;
+      letter-spacing: -0.5px;
+    }
+
+    nav ul {
+      display: flex;
+      list-style: none;
+      gap: 28px;
+      align-items: center;
+    }
+
+    nav ul li a {
+      text-decoration: none;
+      color: var(--text-light);
+      font-size: 14.5px;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    nav ul li a:hover, nav ul li a.active {
+      color: var(--jio-blue);
+    }
+
+    .nav-cta {
+      background: var(--jio-blue);
+      color: white;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 13.5px;
+      transition: var(--transition);
+      border: none;
+      cursor: pointer;
+    }
+
+    .nav-cta:hover {
+      background: var(--jio-blue-dark);
+      box-shadow: 0 4px 12px rgba(0, 84, 180, 0.2);
+    }
+
+    /* ===== HERO SECTION ===== */
+    .hero {
+      background: linear-gradient(135deg, #F3F7FE 0%, #E3EDFD 100%);
+      padding: 100px 24px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-container {
+      max-width: 800px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: var(--jio-blue-light);
+      color: var(--jio-blue);
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 12.5px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      box-shadow: 0 2px 8px rgba(0, 84, 180, 0.05);
+    }
+
+    .hero h1 {
+      font-size: 48px;
+      color: var(--jio-blue-dark);
+      margin-bottom: 24px;
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+    }
+
+    .hero p {
+      font-size: 17px;
+      color: var(--text-light);
+      max-width: 620px;
+      margin: 0 auto 36px;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 28px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 15px;
+      text-decoration: none;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--jio-blue);
+      color: white;
+      box-shadow: 0 4px 14px rgba(0, 84, 180, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: var(--jio-blue-dark);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--jio-blue);
+      border: 1.5px solid var(--jio-blue);
+    }
+
+    .btn-secondary:hover {
+      background: var(--jio-blue-light);
+      transform: translateY(-2px);
+    }
+
+    /* ===== SERVICE CARDS ===== */
+    .services-section {
+      max-width: 1200px;
+      margin: -40px auto 80px;
+      padding: 0 24px;
+      position: relative;
+      z-index: 3;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+    }
+
+    .service-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+      border: 1px solid rgba(229, 231, 235, 0.6);
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .service-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 15px 40px rgba(0, 84, 180, 0.08);
+      border-color: rgba(0, 84, 180, 0.2);
+    }
+
+    .icon-badge {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 24px;
+    }
+
+    .icon-prepaid { background: #E8F2FF; color: var(--jio-blue); }
+    .icon-fiber { background: #FFF1F3; color: var(--jio-red); }
+    .icon-business { background: #E8F7F0; color: var(--jio-green); }
+    .icon-apps { background: #F5E8FF; color: #7C3AED; }
+
+    .service-card h3 {
+      font-size: 20px;
+      color: var(--jio-blue-dark);
+      margin-bottom: 12px;
+    }
+
+    .service-card p {
+      font-size: 14.5px;
+      color: var(--text-light);
+      margin-bottom: 24px;
+      flex-grow: 1;
+    }
+
+    .card-link {
+      font-size: 14.5px;
+      color: var(--jio-blue);
+      text-decoration: none;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+    }
+
+    .card-link:hover {
+      color: var(--jio-blue-dark);
+      gap: 10px;
+    }
+
+    /* ===== INFORMATION/PROMOTION SECTION ===== */
+    .promo-section {
+      background: white;
+      padding: 80px 24px;
+      border-top: 1px solid rgba(229, 231, 235, 0.8);
+      border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+    }
+
+    .promo-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .promo-container h2 {
+      font-size: 32px;
+      color: var(--jio-blue-dark);
+      margin-bottom: 20px;
+    }
+
+    .promo-container p {
+      font-size: 16px;
+      color: var(--text-light);
+      max-width: 600px;
+      margin-bottom: 32px;
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background: var(--jio-blue-dark);
+      color: rgba(255, 255, 255, 0.7);
+      padding: 60px 24px 40px;
+      font-size: 14px;
+      border-top: 4px solid var(--jio-red);
+    }
+
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .footer-links li a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .footer-links li a:hover {
+      color: white;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      font-size: 12.5px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 24px;
+      width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .nav-container { flex-direction: column; gap: 16px; }
+      nav ul { flex-wrap: wrap; justify-content: center; gap: 16px; }
+      .hero h1 { font-size: 36px; }
+      .hero-buttons { flex-direction: column; align-items: center; }
+      .btn { width: 100%; max-width: 280px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVIGATION HEADER -->
+  <header>
+    <div class="nav-container">
+      <a href="/" class="logo-container">
+        <div class="jio-logo-badge">J</div>
+        <span class="logo-text">Jio</span>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="/" class="active">Home</a></li>
+          <li><a href="/prepaid">Prepaid</a></li>
+          <li><a href="/fiber">Fiber &amp; AirFiber</a></li>
+          <li><a href="/business">Business</a></li>
+          <li><a href="/apps">Apps</a></li>
+        </ul>
+      </nav>
+      <button class="nav-cta" onclick="openAssistant()">Ask Assistant</button>
+    </div>
+  </header>
+
+  <!-- HERO BANNER -->
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-badge">AI-Enabled Digital Care</div>
+      <h1>Digital Life, Simplified.</h1>
+      <p>Compare plans, activate high-speed home fiber, or secure smart business connectivity. Have questions about our services? Our integrated AI Agent in the corner has you covered.</p>
+      <div class="hero-buttons">
+        <button class="btn btn-primary" onclick="openAssistant()">Chat with AI Agent</button>
+        <a class="btn btn-secondary" href="/prepaid">View Mobile Plans</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICE CARDS SECTION -->
+  <section class="services-section">
+    <div class="grid-container">
+      <!-- Prepaid -->
+      <div class="service-card">
+        <div class="icon-badge icon-prepaid">📱</div>
+        <h3>Prepaid Mobile</h3>
+        <p>Explore high-speed True 5G data plans, data boosters, annual plans, and entertainment bundles with complimentary subscription benefits.</p>
+        <a href="/prepaid" class="card-link">Compare Mobile Plans &rarr;</a>
+      </div>
+
+      <!-- Fiber -->
+      <div class="service-card">
+        <div class="icon-badge icon-fiber">🌐</div>
+        <h3>Fiber &amp; AirFiber</h3>
+        <p>Gigabit-speed home internet and wireless AirFiber plans. Enjoy seamless streaming with premium bundled OTT platforms.</p>
+        <a href="/fiber" class="card-link">View Broadband Plans &rarr;</a>
+      </div>
+
+      <!-- Business -->
+      <div class="service-card">
+        <div class="icon-badge icon-business">💼</div>
+        <h3>JioBusiness</h3>
+        <p>Accelerate your growth with corporate leased lines, scalable cloud services, and reliable IoT business ecosystem solutions.</p>
+        <a href="/business" class="card-link">Explore Solutions &rarr;</a>
+      </div>
+
+      <!-- Apps -->
+      <div class="service-card">
+        <div class="icon-badge icon-apps">✨</div>
+        <h3>Jio Apps</h3>
+        <p>Access high-definition streaming on JioCinema, music on JioSaavn, secure cloud backups on JioCloud, and simple account audits in MyJio.</p>
+        <a href="/apps" class="card-link">Download Apps &rarr;</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CALL TO ACTION / INFORMATION SECTION -->
+  <section class="promo-section">
+    <div class="promo-container">
+      <h2>Need Help? Ask our Live Assistant</h2>
+      <p>Skip the IVR and endless menus. Simply open our AI Agent in the bottom corner of your screen to get real-time, grounded plans information instantly.</p>
+      <button class="btn btn-primary" onclick="openAssistant()">Open Chat Assistant</button>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-container">
+      <ul class="footer-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/prepaid">Prepaid Mobile</a></li>
+        <li><a href="/fiber">JioFiber</a></li>
+        <li><a href="/business">JioBusiness</a></li>
+        <li><a href="/apps">Jio Apps</a></li>
+      </ul>
+      <div class="footer-bottom">
+        &copy; 2026 Reliance Jio Infocomm Ltd. Demo Project - RAG AI Agent with FastAPI + FAISS + Google ADK.
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/widget.js" defer></script>
+</body>
+</html>

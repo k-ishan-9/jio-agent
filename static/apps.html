@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jio Apps - Entertainment, Music, Utilities &amp; Productivity</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/widget.css">
+  <style>
+    :root {
+      --jio-blue: #0054B4;
+      --jio-blue-dark: #0A2885;
+      --jio-blue-light: #EBF3FF;
+      --jio-red: #E31837;
+      --text-dark: #1F2937;
+      --text-light: #4B5563;
+      --bg-light: #F9FAFB;
+      --white: #FFFFFF;
+      --radius: 16px;
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text-dark);
+      background-color: var(--bg-light);
+      line-height: 1.6;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+    }
+
+    /* ===== NAVIGATION ===== */
+    header {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .jio-logo-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--jio-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+    }
+
+    .logo-text {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--jio-blue-dark);
+      font-family: 'Outfit', sans-serif;
+      letter-spacing: -0.5px;
+    }
+
+    nav ul {
+      display: flex;
+      list-style: none;
+      gap: 28px;
+      align-items: center;
+    }
+
+    nav ul li a {
+      text-decoration: none;
+      color: var(--text-light);
+      font-size: 14.5px;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    nav ul li a:hover, nav ul li a.active {
+      color: var(--jio-blue);
+    }
+
+    .nav-cta {
+      background: var(--jio-blue);
+      color: white;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 13.5px;
+      transition: var(--transition);
+      border: none;
+      cursor: pointer;
+    }
+
+    .nav-cta:hover {
+      background: var(--jio-blue-dark);
+    }
+
+    /* ===== HEADER ===== */
+    .apps-header {
+      background: linear-gradient(135deg, var(--jio-blue-dark), var(--jio-blue));
+      color: white;
+      padding: 60px 24px 100px;
+      text-align: center;
+    }
+
+    .apps-header h1 {
+      font-size: 38px;
+      margin-bottom: 12px;
+    }
+
+    .apps-header p {
+      font-size: 16px;
+      opacity: 0.9;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ===== APPS GRID ===== */
+    .apps-container {
+      max-width: 1200px;
+      margin: -60px auto 80px;
+      padding: 0 24px;
+    }
+
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .app-card {
+      background: white;
+      border-radius: var(--radius);
+      border: 1px solid rgba(229, 231, 235, 0.8);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: var(--transition);
+    }
+
+    .app-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 40px rgba(0, 84, 180, 0.06);
+      border-color: rgba(0, 84, 180, 0.15);
+    }
+
+    .app-logo {
+      width: 72px;
+      height: 72px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .logo-myjio { background: linear-gradient(135deg, #0054B4, #0A2885); }
+    .logo-cinema { background: linear-gradient(135deg, #FF1E56, #E31837); }
+    .logo-saavn { background: linear-gradient(135deg, #00E1D9, #00A89F); }
+    .logo-tv { background: linear-gradient(135deg, #9F1239, #E11D48); }
+    .logo-cloud { background: linear-gradient(135deg, #3B82F6, #1D4ED8); }
+    .logo-health { background: linear-gradient(135deg, #10B981, #047857); }
+
+    .app-category {
+      background: var(--jio-blue-light);
+      color: var(--jio-blue);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .app-card h3 {
+      font-size: 20px;
+      color: var(--jio-blue-dark);
+      margin-bottom: 10px;
+    }
+
+    .app-card p {
+      font-size: 13.5px;
+      color: var(--text-light);
+      margin-bottom: 24px;
+      line-height: 1.5;
+      flex-grow: 1;
+    }
+
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--jio-blue);
+      color: white;
+      width: 100%;
+      padding: 12px;
+      border-radius: 25px;
+      font-weight: 600;
+      font-size: 14.5px;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .btn-download:hover {
+      background: var(--jio-blue-dark);
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background: var(--jio-blue-dark);
+      color: rgba(255, 255, 255, 0.7);
+      padding: 60px 24px 40px;
+      font-size: 14px;
+      border-top: 4px solid var(--jio-red);
+    }
+
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .footer-links li a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .footer-links li a:hover {
+      color: white;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      font-size: 12.5px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 24px;
+      width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .nav-container { flex-direction: column; gap: 16px; }
+      nav ul { flex-wrap: wrap; justify-content: center; gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVIGATION HEADER -->
+  <header>
+    <div class="nav-container">
+      <a href="/" class="logo-container">
+        <div class="jio-logo-badge">J</div>
+        <span class="logo-text">Jio</span>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/prepaid">Prepaid</a></li>
+          <li><a href="/fiber">Fiber &amp; AirFiber</a></li>
+          <li><a href="/business">Business</a></li>
+          <li><a href="/apps" class="active">Apps</a></li>
+        </ul>
+      </nav>
+      <button class="nav-cta" onclick="openAssistant()">Ask Assistant</button>
+    </div>
+  </header>
+
+  <!-- HEAD SECTION -->
+  <section class="apps-header">
+    <h1>Jio Apps Ecosystem</h1>
+    <p>Manage your account, stream blockbusters, tune into your favorite playlists, or secure your medical diagnostics. One login, unlimited digital life.</p>
+  </section>
+
+  <!-- APPS GRID -->
+  <main class="apps-container">
+    <div class="apps-grid">
+      <!-- App 1: MyJio -->
+      <div class="app-card">
+        <div class="app-logo logo-myjio">📱</div>
+        <span class="app-category">Utility</span>
+        <h3>MyJio</h3>
+        <p>Your one-stop destination for recharges, managing active vouchers, tracking real-time data consumption, and paying postpaid bills.</p>
+        <a href="#" class="btn-download">Get App</a>
+      </div>
+
+      <!-- App 2: JioCinema -->
+      <div class="app-card">
+        <div class="app-logo logo-cinema">🎬</div>
+        <span class="app-category">Entertainment</span>
+        <h3>JioCinema</h3>
+        <p>Watch live sports including the IPL, blockbuster Bollywood and Hollywood movies, popular TV serials, and premium web series in ultra-HD.</p>
+        <a href="#" class="btn-download">Get App</a>
+      </div>
+
+      <!-- App 3: JioSaavn -->
+      <div class="app-card">
+        <div class="app-logo logo-saavn">🎵</div>
+        <span class="app-category">Music</span>
+        <h3>JioSaavn</h3>
+        <p>Stream over 80 million tracks in high-quality audio. Create playlists, set custom JioTunes, and enjoy podcasts in multiple languages.</p>
+        <a href="#" class="btn-download">Get App</a>
+      </div>
+
+      <!-- App 4: JioTV -->
+      <div class="app-card">
+        <div class="app-logo logo-tv">📺</div>
+        <span class="app-category">Entertainment</span>
+        <h3>JioTV</h3>
+        <p>Stream 800+ television channels live including news, sports, entertainment, and movies with catch-up options for past programs.</p>
+        <a href="#" class="btn-download">Get App</a>
+      </div>
+
+      <!-- App 5: JioCloud -->
+      <div class="app-card">
+        <div class="app-logo logo-cloud">☁️</div>
+        <span class="app-category">Productivity</span>
+        <h3>JioCloud</h3>
+        <p>Secure cloud backups for your photos, videos, contacts, and documents. Sync data seamlessly across multiple mobile and PC devices.</p>
+        <a href="#" class="btn-download">Get App</a>
+      </div>
+
+      <!-- App 6: JioHealthHub -->
+      <div class="app-card">
+        <div class="app-logo logo-health">❤️</div>
+        <span class="app-category">Utility</span>
+        <h3>JioHealthHub</h3>
+        <p>Book online doctor consultations, schedule lab tests, manage digital health reports, and purchase medicines from the comfort of home.</p>
+        <a href="#" class="btn-download">Get App</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-container">
+      <ul class="footer-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/prepaid">Prepaid Mobile</a></li>
+        <li><a href="/fiber">JioFiber</a></li>
+        <li><a href="/business">JioBusiness</a></li>
+        <li><a href="/apps">Jio Apps</a></li>
+      </ul>
+      <div class="footer-bottom">
+        &copy; 2026 Reliance Jio Infocomm Ltd. Demo Project - RAG AI Agent with FastAPI + FAISS + Google ADK.
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/widget.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JioBusiness - Enterprise Connectivity, Cloud &amp; IoT Solutions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/widget.css">
+  <style>
+    :root {
+      --jio-blue: #0054B4;
+      --jio-blue-dark: #0A2885;
+      --jio-blue-light: #EBF3FF;
+      --jio-red: #E31837;
+      --jio-green: #00A34E;
+      --text-dark: #1F2937;
+      --text-light: #4B5563;
+      --bg-light: #F9FAFB;
+      --white: #FFFFFF;
+      --radius: 16px;
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text-dark);
+      background-color: var(--bg-light);
+      line-height: 1.6;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+    }
+
+    /* ===== NAVIGATION ===== */
+    header {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .jio-logo-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--jio-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+    }
+
+    .logo-text {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--jio-blue-dark);
+      font-family: 'Outfit', sans-serif;
+      letter-spacing: -0.5px;
+    }
+
+    nav ul {
+      display: flex;
+      list-style: none;
+      gap: 28px;
+      align-items: center;
+    }
+
+    nav ul li a {
+      text-decoration: none;
+      color: var(--text-light);
+      font-size: 14.5px;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    nav ul li a:hover, nav ul li a.active {
+      color: var(--jio-blue);
+    }
+
+    .nav-cta {
+      background: var(--jio-blue);
+      color: white;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 13.5px;
+      transition: var(--transition);
+      border: none;
+      cursor: pointer;
+    }
+
+    .nav-cta:hover {
+      background: var(--jio-blue-dark);
+    }
+
+    /* ===== HERO SECTION ===== */
+    .hero {
+      background: linear-gradient(135deg, #0A2885 0%, #0054B4 100%);
+      padding: 90px 24px 80px;
+      text-align: center;
+      color: white;
+    }
+
+    .hero-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 12.5px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .hero h1 {
+      font-size: 44px;
+      margin-bottom: 20px;
+      line-height: 1.2;
+    }
+
+    .hero p {
+      font-size: 17px;
+      opacity: 0.9;
+      max-width: 600px;
+      margin: 0 auto 36px;
+    }
+
+    /* ===== SOLUTIONS SECTION ===== */
+    .section-container {
+      max-width: 1200px;
+      margin: 60px auto 80px;
+      padding: 0 24px;
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .section-title h2 {
+      font-size: 32px;
+      color: var(--jio-blue-dark);
+      margin-bottom: 12px;
+    }
+
+    .section-title p {
+      color: var(--text-light);
+      max-width: 500px;
+      margin: 0 auto;
+      font-size: 15px;
+    }
+
+    .solutions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 28px;
+    }
+
+    .solution-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      border: 1px solid rgba(229, 231, 235, 0.8);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+      transition: var(--transition);
+    }
+
+    .solution-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 40px rgba(0, 84, 180, 0.05);
+      border-color: rgba(0, 84, 180, 0.15);
+    }
+
+    .solution-icon {
+      font-size: 32px;
+      margin-bottom: 24px;
+    }
+
+    .solution-card h3 {
+      font-size: 22px;
+      color: var(--jio-blue-dark);
+      margin-bottom: 12px;
+    }
+
+    .solution-card p {
+      font-size: 14.5px;
+      color: var(--text-light);
+      margin-bottom: 20px;
+    }
+
+    .solution-features {
+      list-style: none;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .solution-features li {
+      font-size: 13.5px;
+      color: var(--text-dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .solution-features li::before {
+      content: '✓';
+      color: var(--jio-green);
+      font-weight: bold;
+    }
+
+    /* ===== LEAD FORM SECTION ===== */
+    .lead-section {
+      background: #F3F4F6;
+      padding: 80px 24px;
+    }
+
+    .form-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 40px;
+      border-radius: var(--radius);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(229, 231, 235, 0.6);
+    }
+
+    .form-container h2 {
+      font-size: 26px;
+      color: var(--jio-blue-dark);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .form-container p {
+      color: var(--text-light);
+      font-size: 14.5px;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 6px;
+    }
+
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--jio-blue);
+      box-shadow: 0 0 0 3px rgba(0, 84, 180, 0.15);
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--jio-blue);
+      color: white;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-submit:hover {
+      background: var(--jio-blue-dark);
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background: var(--jio-blue-dark);
+      color: rgba(255, 255, 255, 0.7);
+      padding: 60px 24px 40px;
+      font-size: 14px;
+      border-top: 4px solid var(--jio-red);
+    }
+
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .footer-links li a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .footer-links li a:hover {
+      color: white;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      font-size: 12.5px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 24px;
+      width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .nav-container { flex-direction: column; gap: 16px; }
+      nav ul { flex-wrap: wrap; justify-content: center; gap: 16px; }
+      .form-container { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVIGATION HEADER -->
+  <header>
+    <div class="nav-container">
+      <a href="/" class="logo-container">
+        <div class="jio-logo-badge">J</div>
+        <span class="logo-text">Jio</span>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/prepaid">Prepaid</a></li>
+          <li><a href="/fiber">Fiber &amp; AirFiber</a></li>
+          <li><a href="/business" class="active">Business</a></li>
+          <li><a href="/apps">Apps</a></li>
+        </ul>
+      </nav>
+      <button class="nav-cta" onclick="openAssistant()">Ask Assistant</button>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-badge">Enterprise Digitization</div>
+      <h1>Accelerate Your Digital Journey</h1>
+      <p>Custom networking solutions, enterprise leased lines, advanced IoT suites, and secure multi-cloud structures. Built to scale your business.</p>
+    </div>
+  </section>
+
+  <!-- SOLUTIONS CONTAINER -->
+  <main class="section-container">
+    <div class="section-title">
+      <h2>Tailored Enterprise Solutions</h2>
+      <p>We empower startups, small businesses, and large enterprises with robust tech stacks.</p>
+    </div>
+
+    <div class="solutions-grid">
+      <!-- Solution 1 -->
+      <div class="solution-card">
+        <div class="solution-icon">🏢</div>
+        <h3>Connectivity Solutions</h3>
+        <p>Ensure 99.9% uptime with corporate lease lines, dedicated internet, SD-WAN smart routing, and secure virtual private networks.</p>
+        <ul class="solution-features">
+          <li>Dedicated Internet Access (DIA)</li>
+          <li>Corporate Leased Line (ILL)</li>
+          <li>SD-WAN Managed Networks</li>
+        </ul>
+      </div>
+
+      <!-- Solution 2 -->
+      <div class="solution-card">
+        <div class="solution-icon">☁️</div>
+        <h3>Cloud &amp; SaaS</h3>
+        <p>Scalable Infrastructure-as-a-Service (IaaS), secure databases, data storage, and SaaS solutions for modern digital workspaces.</p>
+        <ul class="solution-features">
+          <li>Jio Cloud Enterprise Backups</li>
+          <li>Managed Database Services</li>
+          <li>Workspace Productivity Suites</li>
+        </ul>
+      </div>
+
+      <!-- Solution 3 -->
+      <div class="solution-card">
+        <div class="solution-icon">🤖</div>
+        <h3>IoT &amp; Automation</h3>
+        <p>Smart asset tracking, sensor-driven warehouse management, predictive maintenance, and corporate smart-metering devices.</p>
+        <ul class="solution-features">
+          <li>Smart Fleet Tracking</li>
+          <li>Industrial IoT Sensors</li>
+          <li>Asset &amp; Utility Monitoring</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <!-- CONTACT FORM SECTION -->
+  <section class="lead-section">
+    <div class="form-container">
+      <h2>Request a Demo</h2>
+      <p>Have our enterprise experts design a custom network solution for your organization.</p>
+      <form onsubmit="event.preventDefault(); alert('Thank you! Our executive will contact you shortly.');">
+        <div class="form-group">
+          <label for="comp-name">Company Name</label>
+          <input type="text" id="comp-name" required placeholder="Enter company name">
+        </div>
+        <div class="form-group">
+          <label for="contact-name">Contact Person</label>
+          <input type="text" id="contact-name" required placeholder="Your full name">
+        </div>
+        <div class="form-group">
+          <label for="email">Work Email</label>
+          <input type="email" id="email" required placeholder="name@company.com">
+        </div>
+        <div class="form-group">
+          <label for="interest">Area of Interest</label>
+          <select id="interest" required>
+            <option value="connectivity">Enterprise Connectivity (ILL / Leased Line)</option>
+            <option value="cloud">Cloud Infrastructure &amp; Backup</option>
+            <option value="iot">Smart IoT &amp; Fleet Management</option>
+            <option value="other">Other Solutions</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="msg">Message / Requirements</label>
+          <textarea id="msg" rows="4" placeholder="Briefly describe your requirements..."></textarea>
+        </div>
+        <button type="submit" class="btn-submit">Submit Request</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-container">
+      <ul class="footer-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/prepaid">Prepaid Mobile</a></li>
+        <li><a href="/fiber">JioFiber</a></li>
+        <li><a href="/business">JioBusiness</a></li>
+        <li><a href="/apps">Jio Apps</a></li>
+      </ul>
+      <div class="footer-bottom">
+        &copy; 2026 Reliance Jio Infocomm Ltd. Demo Project - RAG AI Agent with FastAPI + FAISS + Google ADK.
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/widget.js" defer></script>
+</body>
+</html>
