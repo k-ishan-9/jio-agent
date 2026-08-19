@@ -30,6 +30,12 @@
       </div>
 
       <div id="chat-input-row">
+        <button id="chat-mic" aria-label="Speak your question">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
         <input id="chat-input" type="text" placeholder="Ask about plans, features..." autocomplete="off">
         <button id="chat-send" aria-label="Send query">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -49,9 +55,69 @@
   const messagesContainer = document.getElementById('chat-messages');
   const chatInput = document.getElementById('chat-input');
   const sendBtn = document.getElementById('chat-send');
+  const micBtn = document.getElementById('chat-mic');
 
   let isOpen = false;
   let currentSessionId = null;
+
+  // 2b. Speech-to-text (Web Speech API) - mic input
+  const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+  let isListening = false;
+
+  if (SpeechRecognitionCtor) {
+    recognition = new SpeechRecognitionCtor();
+    recognition.lang = 'en-IN';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.addEventListener('start', () => {
+      isListening = true;
+      micBtn.classList.add('listening');
+    });
+
+    recognition.addEventListener('result', (event) => {
+      const transcript = event.results[0][0].transcript;
+      chatInput.value = transcript;
+      chatInput.focus();
+    });
+
+    recognition.addEventListener('error', () => {
+      micBtn.classList.add('mic-error');
+      setTimeout(() => micBtn.classList.remove('mic-error'), 600);
+    });
+
+    recognition.addEventListener('end', () => {
+      isListening = false;
+      micBtn.classList.remove('listening');
+    });
+
+    micBtn.addEventListener('click', () => {
+      if (isListening) {
+        recognition.stop();
+      } else {
+        try {
+          recognition.start();
+        } catch (e) {
+          // start() throws if already started; ignore
+        }
+      }
+    });
+  } else {
+    // Browser doesn't support speech recognition (e.g. Firefox) - hide the mic button
+    micBtn.style.display = 'none';
+  }
+
+  // 2c. Text-to-speech (Web Speech API) - read bot replies aloud
+  function speak(text) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel(); // stop any ongoing speech
+    const plainText = text.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '');
+    const utterance = new SpeechSynthesisUtterance(plainText);
+    utterance.lang = 'en-IN';
+    utterance.rate = 1;
+    window.speechSynthesis.speak(utterance);
+  }
 
   // 3. Toggle Assistant Panel
   function toggleAssistant() {
@@ -98,6 +164,19 @@
       formattedText = formattedText.replace(/\n/g, '<br>');
       
       msgDiv.innerHTML = formattedText;
+
+      // Add a read-aloud button for bot replies (Web Speech API text-to-speech)
+      if ('speechSynthesis' in window) {
+        const speakBtn = document.createElement('button');
+        speakBtn.className = 'msg-speak-btn';
+        speakBtn.setAttribute('aria-label', 'Read reply aloud');
+        speakBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="13" height="13">
+          <path d="M4 9v6h4l5 5V4L8 9H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M17 8a5 5 0 0 1 0 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>`;
+        speakBtn.addEventListener('click', () => speak(text));
+        msgDiv.appendChild(speakBtn);
+      }
     } else {
       msgDiv.textContent = text;
     }
@@ -111,6 +190,8 @@
   async function handleSendMessage() {
     const question = chatInput.value.trim();
     if (!question) return;
+
+    if (isListening) recognition.stop();
 
     // Display user message
     addMessage(question, 'msg-user');
