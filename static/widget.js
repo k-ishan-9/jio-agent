@@ -210,7 +210,82 @@
     return msgDiv;
   }
 
-  // 5. Send Message to Backend
+  // 4b. Attach source/tool-used metadata to a finished bot message div.
+  function attachMeta(botMsgDiv, data) {
+    if (!data.tool_used && !(data.sources && data.sources.length)) return;
+
+    const metaDiv = document.createElement('div');
+    metaDiv.className = 'msg-meta';
+
+    let sourceLabel = '';
+    if (data.tool_used === 'sql') {
+      sourceLabel = 'Source: Database Query';
+    } else if (data.tool_used === 'vector') {
+      sourceLabel = 'Source: Document Search';
+    } else if (data.tool_used === 'both') {
+      sourceLabel = 'Source: Hybrid DB + FAQ Search';
+    }
+
+    if (sourceLabel) {
+      const tag = document.createElement('span');
+      tag.className = 'source-tag';
+      tag.textContent = sourceLabel;
+      metaDiv.appendChild(tag);
+    }
+
+    if (data.sources && data.sources.length > 0) {
+      const linkHeader = document.createElement('div');
+      linkHeader.style.fontWeight = '600';
+      linkHeader.style.marginTop = '4px';
+      linkHeader.textContent = 'Reference Links:';
+      metaDiv.appendChild(linkHeader);
+
+      const linksContainer = document.createElement('div');
+      linksContainer.className = 'source-links';
+
+      data.sources.forEach(src => {
+        const a = document.createElement('a');
+        a.className = 'source-link-item';
+        a.href = src.url || '#';
+        a.target = '_blank';
+        a.textContent = src.title || 'Plan Detail';
+        if (typeof src.score === 'number') {
+          a.textContent += ` (${Math.round(src.score * 100)}% match)`;
+        }
+        linksContainer.appendChild(a);
+      });
+      metaDiv.appendChild(linksContainer);
+    }
+
+    botMsgDiv.appendChild(metaDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  // 4c. Finalize a streamed bot message: apply markdown-ish formatting to
+  // the accumulated raw text, then add the read-aloud button + metadata.
+  function finalizeStreamedMessage(botMsgDiv, rawText) {
+    let formattedText = rawText
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    formattedText = formattedText.replace(/^\s*[-*]\s+(.+)$/gm, '• $1');
+    formattedText = formattedText.replace(/\n/g, '<br>');
+    botMsgDiv.innerHTML = formattedText;
+
+    if ('speechSynthesis' in window) {
+      const speakBtn = document.createElement('button');
+      speakBtn.className = 'msg-speak-btn';
+      speakBtn.setAttribute('aria-label', 'Read reply aloud');
+      speakBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="13" height="13">
+        <path d="M4 9v6h4l5 5V4L8 9H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M17 8a5 5 0 0 1 0 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>`;
+      speakBtn.addEventListener('click', () => speak(rawText));
+      botMsgDiv.appendChild(speakBtn);
+    }
+  }
+
+  // 5. Send Message to Backend, streaming the reply via /ask/stream (SSE)
   async function handleSendMessage() {
     const question = chatInput.value.trim();
     if (!question) return;
@@ -240,67 +315,57 @@
         payload.session_id = currentSessionId;
       }
 
-      const response = await fetch('/ask', {
+      const response = await fetch('/ask/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
-      loadingDiv.remove();
-
-      if (!response.ok) {
+      if (!response.ok || !response.body) {
+        const data = await response.json().catch(() => ({}));
+        loadingDiv.remove();
         addMessage(`Error: ${data.detail || 'unable to process request'}`, 'msg-bot');
-      } else {
-        if (data.session_id) {
-          currentSessionId = data.session_id;
-        }
-        const botMsgDiv = addMessage(data.answer, 'msg-bot');
+        sendBtn.disabled = false;
+        chatInput.focus();
+        return;
+      }
 
-        // Append source references and tool tag if present
-        if (data.tool_used || (data.sources && data.sources.length)) {
-          const metaDiv = document.createElement('div');
-          metaDiv.className = 'msg-meta';
+      loadingDiv.remove();
+      const botMsgDiv = document.createElement('div');
+      botMsgDiv.className = 'msg msg-bot';
+      messagesContainer.appendChild(botMsgDiv);
 
-          let sourceLabel = '';
-          if (data.tool_used === 'sql') {
-            sourceLabel = 'Source: Database Query';
-          } else if (data.tool_used === 'vector') {
-            sourceLabel = 'Source: Document Search';
-          } else if (data.tool_used === 'both') {
-            sourceLabel = 'Source: Hybrid DB + FAQ Search';
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let rawText = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE frames are separated by a blank line: "event: X\ndata: Y\n\n"
+        let frameEnd;
+        while ((frameEnd = buffer.indexOf('\n\n')) !== -1) {
+          const frame = buffer.slice(0, frameEnd);
+          buffer = buffer.slice(frameEnd + 2);
+
+          const eventMatch = frame.match(/^event: (.+)$/m);
+          const dataMatch = frame.match(/^data: (.+)$/m);
+          if (!eventMatch || !dataMatch) continue;
+          const eventType = eventMatch[1];
+          const payloadData = JSON.parse(dataMatch[1]);
+
+          if (eventType === 'chunk') {
+            rawText += payloadData.text;
+            botMsgDiv.textContent = rawText; // plain text while streaming, formatted on 'done'
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          } else if (eventType === 'done') {
+            if (payloadData.session_id) currentSessionId = payloadData.session_id;
+            finalizeStreamedMessage(botMsgDiv, rawText);
+            attachMeta(botMsgDiv, payloadData);
           }
-
-          if (sourceLabel) {
-            const tag = document.createElement('span');
-            tag.className = 'source-tag';
-            tag.textContent = sourceLabel;
-            metaDiv.appendChild(tag);
-          }
-
-          if (data.sources && data.sources.length > 0) {
-            const linkHeader = document.createElement('div');
-            linkHeader.style.fontWeight = '600';
-            linkHeader.style.marginTop = '4px';
-            linkHeader.textContent = 'Reference Links:';
-            metaDiv.appendChild(linkHeader);
-
-            const linksContainer = document.createElement('div');
-            linksContainer.className = 'source-links';
-
-            data.sources.forEach(src => {
-              const a = document.createElement('a');
-              a.className = 'source-link-item';
-              a.href = src.url || '#';
-              a.target = '_blank';
-              a.textContent = src.title || 'Plan Detail';
-              linksContainer.appendChild(a);
-            });
-            metaDiv.appendChild(linksContainer);
-          }
-
-          botMsgDiv.appendChild(metaDiv);
-          messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
       }
     } catch (error) {

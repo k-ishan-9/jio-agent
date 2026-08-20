@@ -1,11 +1,17 @@
 """
-api/rate_limit.py — simple in-process sliding-window rate limiter.
+api/rate_limit.py — per-IP sliding-ish (fixed-window) rate limiter for
+POST /ask, backed by Redis with an automatic in-process fallback.
 
-Protects POST /ask from scripted bursts that would otherwise rack up Gemini
-API cost with no limit. Deliberately dependency-free (no slowapi/redis) —
-an in-memory per-IP window is enough for a single-instance deployment; a
-multi-instance deployment would need a shared store (e.g. Redis, which the
-project already runs for Celery) instead.
+Why Redis: the project already runs Redis for Celery, and a purely
+in-memory limiter only works correctly for a single API process — the
+moment you run two instances behind a load balancer, each has its own
+counters and a client can get 2x (or Nx) the intended limit by hitting
+different instances. Redis gives every instance a shared view.
+
+Why fall back instead of hard-failing: if Redis is briefly unreachable,
+rate limiting degrading to a per-process limit (rather than the whole
+/ask endpoint going down) is the safer failure mode for a customer
+support bot.
 """
 
 import os
@@ -13,13 +19,18 @@ import threading
 import time
 from collections import defaultdict, deque
 
+import redis
 from fastapi import HTTPException, Request
 
 from api import metrics
+from config import REDIS_URL
 
 WINDOW_SECONDS = int(os.environ.get("RATE_LIMIT_WINDOW_SECONDS", "60"))
 MAX_REQUESTS_PER_WINDOW = int(os.environ.get("RATE_LIMIT_MAX_REQUESTS", "20"))
 
+_redis_client = redis.from_url(REDIS_URL, socket_connect_timeout=1, socket_timeout=1)
+
+# In-memory fallback (used only when Redis is unreachable)
 _lock = threading.Lock()
 _hits: dict[str, deque] = defaultdict(deque)
 
@@ -31,23 +42,41 @@ def _client_key(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
-async def enforce_rate_limit(request: Request):
-    """FastAPI dependency: raises 429 if the caller has exceeded the window."""
-    key = _client_key(request)
-    now = time.time()
+def _check_redis(key: str) -> bool:
+    """Fixed-window counter in Redis. Returns True if the request is allowed."""
+    bucket = int(time.time() // WINDOW_SECONDS)
+    redis_key = f"ratelimit:{key}:{bucket}"
+    count = _redis_client.incr(redis_key)
+    if count == 1:
+        _redis_client.expire(redis_key, WINDOW_SECONDS)
+    return count <= MAX_REQUESTS_PER_WINDOW
 
+
+def _check_in_memory(key: str) -> bool:
+    now = time.time()
     with _lock:
         window = _hits[key]
         while window and now - window[0] > WINDOW_SECONDS:
             window.popleft()
-
         if len(window) >= MAX_REQUESTS_PER_WINDOW:
-            metrics.incr("rate_limited")
-            retry_after = max(1, int(WINDOW_SECONDS - (now - window[0])))
-            raise HTTPException(
-                status_code=429,
-                detail=f"Rate limit exceeded. Try again in {retry_after}s.",
-                headers={"Retry-After": str(retry_after)},
-            )
-
+            return False
         window.append(now)
+        return True
+
+
+async def enforce_rate_limit(request: Request):
+    """FastAPI dependency: raises 429 if the caller has exceeded the window."""
+    key = _client_key(request)
+
+    try:
+        allowed = _check_redis(key)
+    except redis.RedisError:
+        allowed = _check_in_memory(key)
+
+    if not allowed:
+        metrics.incr("rate_limited")
+        raise HTTPException(
+            status_code=429,
+            detail=f"Rate limit exceeded. Try again in under {WINDOW_SECONDS}s.",
+            headers={"Retry-After": str(WINDOW_SECONDS)},
+        )

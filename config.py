@@ -53,6 +53,11 @@ REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 INTERNAL_RELOAD_TOKEN = os.environ.get("INTERNAL_RELOAD_TOKEN", "secret-reload-token-jio")
 API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000")
 
+# --- API auth ---
+# If unset, /ask is open (matches current default deployment); set it to
+# require an X-API-Key header on every request.
+API_KEY = os.environ.get("API_KEY", "")
+
 # --- Session persistence ---
 # ADK's InMemorySessionService loses all conversation history on process
 # restart or when running multiple API instances. DatabaseSessionService

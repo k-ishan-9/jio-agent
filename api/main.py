@@ -9,10 +9,13 @@ Run with:
 import asyncio
 import json
 import logging
+import sqlite3
 import time
 import uuid
 from pathlib import Path
 from typing import List, Optional
+
+import redis
 
 # Monkey-patch JSONEncoder to make bytes JSON-serializable (fixes ADK telemetry trace byte serialization bug)
 _original_default = json.JSONEncoder.default
@@ -26,7 +29,7 @@ def _bytes_safe_default(self, o):
 json.JSONEncoder.default = _bytes_safe_default
 
 from fastapi import Depends, FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -35,15 +38,20 @@ from google.adk.sessions import DatabaseSessionService
 from google.genai import types as genai_types
 from google.genai.errors import ServerError
 
-from config import MAX_RETRIES, verify_data_files_exist, INTERNAL_RELOAD_TOKEN, SESSIONS_DB_URL
+from config import (
+    MAX_RETRIES, verify_data_files_exist, INTERNAL_RELOAD_TOKEN, SESSIONS_DB_URL,
+    SQLITE_DB_PATH, REDIS_URL,
+)
 from retrieval import tools as retrieval_tools
 from agent.adk_agent import root_agent
 from agent.semantic_cache import semantic_cache
 from agent.guardrails import evaluate_intent, rewrite_query
 from api import metrics
+from api.auth import require_api_key
+from api.logging_utils import setup_json_logging, scrub_pii
 from api.rate_limit import enforce_rate_limit
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+setup_json_logging(level=logging.INFO)
 logger = logging.getLogger("jio_agent_api")
 
 APP_NAME = "jio_agent_api"
@@ -101,6 +109,11 @@ class AskRequest(BaseModel):
 class SourceItem(BaseModel):
     title: str
     url: Optional[str] = None
+    # Vector-search cosine similarity (0-1) for FAQ/business results, so the
+    # UI/report can show *how* confident the semantic match was rather than
+    # presenting every hybrid-search result as equally certain. Absent for
+    # SQL plan results, which are exact structured matches, not scored.
+    score: Optional[float] = None
 
 
 class AskResponse(BaseModel):
@@ -143,7 +156,11 @@ async def run_agent_query(question: str, session_id: str) -> AskResponse:
                         if fr is not None and isinstance(fr.response, dict):
                             for item in (fr.response.get("plans") or fr.response.get("results") or []):
                                 if isinstance(item, dict) and item.get("url"):
-                                    sources.append(SourceItem(title=item.get("title", "source"), url=item["url"]))
+                                    sources.append(SourceItem(
+                                        title=item.get("title", "source"),
+                                        url=item["url"],
+                                        score=item.get("score"),
+                                    ))
                 if event.is_final_response():
                     if event.content and event.content.parts:
                         final_text = event.content.parts[0].text
@@ -175,10 +192,13 @@ async def run_agent_query(question: str, session_id: str) -> AskResponse:
     return AskResponse(answer=final_text, sources=deduped_sources, tool_used=tool_used, session_id=session_id)
 
 
-@app.post("/ask", response_model=AskResponse, dependencies=[Depends(enforce_rate_limit)])
-async def ask(request: AskRequest):
+async def _process_ask(request: AskRequest) -> AskResponse:
+    """Shared pipeline (cache -> guardrail -> rewrite -> agent) used by both
+    the plain JSON /ask endpoint and the SSE /ask/stream endpoint, so the
+    two never drift out of sync."""
     start = time.time()
     session_id = request.session_id or str(uuid.uuid4())
+    safe_question = scrub_pii(request.question)
     metrics.incr("requests_total")
     try:
         # 1. Check Semantic Cache FIRST on raw query (avoids Gemini API calls on cache hits!)
@@ -194,10 +214,10 @@ async def ask(request: AskRequest):
                 SESSION_CONTEXTS[session_id] = SESSION_CONTEXTS[session_id][-8:]
 
             elapsed = time.time() - start
-            logger.info(f"question={request.question!r} CACHE_HIT elapsed={elapsed:.4f}s")
+            logger.info(f"question={safe_question!r} CACHE_HIT elapsed={elapsed:.4f}s")
             return AskResponse(
                 answer=cached_result["answer"],
-                sources=[SourceItem(title=s["title"], url=s["url"]) for s in cached_result["sources"]],
+                sources=[SourceItem(title=s["title"], url=s["url"], score=s.get("score")) for s in cached_result["sources"]],
                 tool_used=cached_result["tool_used"],
                 session_id=session_id
             )
@@ -209,7 +229,7 @@ async def ask(request: AskRequest):
         if not is_safe:
             metrics.incr("guardrail_blocked")
             elapsed = time.time() - start
-            logger.info(f"question={request.question!r} BLOCKED elapsed={elapsed:.4f}s")
+            logger.info(f"question={safe_question!r} BLOCKED elapsed={elapsed:.4f}s")
             return AskResponse(answer=refusal, sources=[], tool_used="none", session_id=session_id)
         metrics.incr("guardrail_allowed")
 
@@ -236,20 +256,62 @@ async def ask(request: AskRequest):
                 request.question,
                 response.answer,
                 response.tool_used,
-                [{"title": s.title, "url": s.url} for s in response.sources]
+                [{"title": s.title, "url": s.url, "score": s.score} for s in response.sources]
             )
 
     except HTTPException:
         raise
     except Exception as e:
         metrics.incr("errors")
-        logger.exception(f"Unexpected error handling question: {request.question!r}")
+        logger.exception(f"Unexpected error handling question: {safe_question!r}")
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
     elapsed = time.time() - start
-    logger.info(f"question={request.question!r} tool_used={response.tool_used} "
+    logger.info(f"question={safe_question!r} tool_used={response.tool_used} "
                 f"sources={len(response.sources)} elapsed={elapsed:.2f}s")
     return response
+
+
+@app.post(
+    "/ask",
+    response_model=AskResponse,
+    dependencies=[Depends(enforce_rate_limit), Depends(require_api_key)],
+)
+async def ask(request: AskRequest):
+    return await _process_ask(request)
+
+
+@app.post(
+    "/ask/stream",
+    dependencies=[Depends(enforce_rate_limit), Depends(require_api_key)],
+)
+async def ask_stream(request: AskRequest):
+    """SSE variant of /ask for a progressive, ChatGPT-style typing effect
+    in the widget. Runs the exact same cache/guardrail/rewrite/agent
+    pipeline as /ask (via _process_ask) — the answer is generated in full
+    first, then delivered to the client word-by-word. This is a UX/latency
+    trick (perceived responsiveness), not true token-level LLM streaming;
+    true streaming would require threading partial deltas through ADK's
+    Runner events and Gemini's own streaming API, which is a larger change
+    than this endpoint's scope."""
+
+    async def event_stream():
+        response = await _process_ask(request)
+
+        words = response.answer.split(" ")
+        for i, word in enumerate(words):
+            chunk = word if i == 0 else " " + word
+            yield f"event: chunk\ndata: {json.dumps({'text': chunk})}\n\n"
+            await asyncio.sleep(0.015)  # small delay so it reads as a stream, not a flash
+
+        done_payload = {
+            "sources": [s.model_dump() for s in response.sources],
+            "tool_used": response.tool_used,
+            "session_id": response.session_id,
+        }
+        yield f"event: done\ndata: {json.dumps(done_payload)}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 class ReloadRequest(BaseModel):
@@ -283,4 +345,37 @@ async def get_metrics():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    """Actually checks the three things that make the API able to serve a
+    request, instead of unconditionally returning ok: the plans DB is
+    reachable, the FAISS index is loaded in memory, and Redis (used by
+    both Celery and the rate limiter/metrics) is reachable."""
+    checks = {}
+
+    def _check_db():
+        conn = sqlite3.connect(str(SQLITE_DB_PATH), timeout=2)
+        try:
+            conn.execute("SELECT 1 FROM plans LIMIT 1")
+        finally:
+            conn.close()
+
+    try:
+        await asyncio.to_thread(_check_db)
+        checks["database"] = "ok"
+    except Exception as e:
+        checks["database"] = f"error: {e}"
+
+    checks["faiss_index"] = "ok" if retrieval_tools._faiss_index is not None else "not_loaded"
+
+    try:
+        client = redis.from_url(REDIS_URL, socket_connect_timeout=2)
+        await asyncio.to_thread(client.ping)
+        checks["redis"] = "ok"
+    except Exception as e:
+        checks["redis"] = f"error: {e}"
+
+    healthy = checks["database"] == "ok" and checks["faiss_index"] == "ok"
+    status_code = 200 if healthy else 503
+    return JSONResponse(
+        status_code=status_code,
+        content={"status": "ok" if healthy else "degraded", "checks": checks},
+    )
