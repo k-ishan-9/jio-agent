@@ -53,6 +53,13 @@ REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 INTERNAL_RELOAD_TOKEN = os.environ.get("INTERNAL_RELOAD_TOKEN", "secret-reload-token-jio")
 API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000")
 
+# --- Session persistence ---
+# ADK's InMemorySessionService loses all conversation history on process
+# restart or when running multiple API instances. DatabaseSessionService
+# persists sessions to SQLite (or any SQLAlchemy URL) so conversations
+# survive restarts.
+SESSIONS_DB_URL = os.environ.get("SESSIONS_DB_URL", f"sqlite:///{DATA_ROOT / 'sessions.db'}")
+
 # --- Scraper target URLs ---
 JIO_PLANS_URL = os.environ.get("JIO_PLANS_URL", "https://www.jio.com/mobile/prepaid-plans")
 JIO_FAQ_URL = os.environ.get("JIO_FAQ_URL", "https://www.jio.com/help/faq")

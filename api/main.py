@@ -25,21 +25,23 @@ def _bytes_safe_default(self, o):
     return _original_default(self, o)
 json.JSONEncoder.default = _bytes_safe_default
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
+from google.adk.sessions import DatabaseSessionService
 from google.genai import types as genai_types
 from google.genai.errors import ServerError
 
-from config import MAX_RETRIES, verify_data_files_exist, INTERNAL_RELOAD_TOKEN
+from config import MAX_RETRIES, verify_data_files_exist, INTERNAL_RELOAD_TOKEN, SESSIONS_DB_URL
 from retrieval import tools as retrieval_tools
 from agent.adk_agent import root_agent
 from agent.semantic_cache import semantic_cache
 from agent.guardrails import evaluate_intent, rewrite_query
+from api import metrics
+from api.rate_limit import enforce_rate_limit
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("jio_agent_api")
@@ -49,7 +51,9 @@ USER_ID = "api_user"
 
 app = FastAPI(title="Jio AI Agent API")
 
-session_service = InMemorySessionService()
+# Persisted to SQLite so conversation history survives process restarts and
+# is shared across multiple API instances, instead of living only in memory.
+session_service = DatabaseSessionService(db_url=SESSIONS_DB_URL)
 runner = Runner(agent=root_agent, app_name=APP_NAME, session_service=session_service)
 
 STATIC_DIR = Path(__file__).parent.parent / "static"
@@ -113,9 +117,14 @@ SESSION_CONTEXTS = {}
 
 async def run_agent_query(question: str, session_id: str) -> AskResponse:
     if session_id not in ACTIVE_SESSIONS:
-        await session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+        # Sessions now persist to disk (DatabaseSessionService), so a session_id
+        # from before a restart may already exist in the DB even though our
+        # in-memory ACTIVE_SESSIONS set was just reset — check before creating.
+        existing = await session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+        if existing is None:
+            await session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
         ACTIVE_SESSIONS.add(session_id)
-        
+
     content = genai_types.Content(role="user", parts=[genai_types.Part(text=question)])
     tools_called, sources, final_text = set(), [], None
 
@@ -166,14 +175,16 @@ async def run_agent_query(question: str, session_id: str) -> AskResponse:
     return AskResponse(answer=final_text, sources=deduped_sources, tool_used=tool_used, session_id=session_id)
 
 
-@app.post("/ask", response_model=AskResponse)
+@app.post("/ask", response_model=AskResponse, dependencies=[Depends(enforce_rate_limit)])
 async def ask(request: AskRequest):
     start = time.time()
     session_id = request.session_id or str(uuid.uuid4())
+    metrics.incr("requests_total")
     try:
         # 1. Check Semantic Cache FIRST on raw query (avoids Gemini API calls on cache hits!)
         cached_result = semantic_cache.lookup(request.question)
         if cached_result:
+            metrics.incr("cache_hit")
             # Save query and cached answer to context history
             if session_id not in SESSION_CONTEXTS:
                 SESSION_CONTEXTS[session_id] = []
@@ -190,14 +201,17 @@ async def ask(request: AskRequest):
                 tool_used=cached_result["tool_used"],
                 session_id=session_id
             )
+        metrics.incr("cache_miss")
 
         # 2. Cache Miss - Evaluate intent guardrails with history context
         history = SESSION_CONTEXTS.get(session_id, [])
         is_safe, refusal = evaluate_intent(request.question, history)
         if not is_safe:
+            metrics.incr("guardrail_blocked")
             elapsed = time.time() - start
             logger.info(f"question={request.question!r} BLOCKED elapsed={elapsed:.4f}s")
             return AskResponse(answer=refusal, sources=[], tool_used="none", session_id=session_id)
+        metrics.incr("guardrail_allowed")
 
         # 3. Rewrite query for optimal RAG retrieval
         optimized_query = rewrite_query(request.question)
@@ -205,6 +219,7 @@ async def ask(request: AskRequest):
         # 4. Run RAG agent query using the raw question to preserve natural follow-ups in chat history
         # (The ADK agent automatically retrieves database filters from the conversation context)
         response = await run_agent_query(request.question, session_id)
+        metrics.incr(f"tool_{response.tool_used}")
 
         # Save successful turn to context history
         if response.answer and "Error:" not in response.answer:
@@ -227,6 +242,7 @@ async def ask(request: AskRequest):
     except HTTPException:
         raise
     except Exception as e:
+        metrics.incr("errors")
         logger.exception(f"Unexpected error handling question: {request.question!r}")
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
@@ -248,6 +264,21 @@ async def reload_index(req: ReloadRequest):
     if not success:
         raise HTTPException(status_code=500, detail="Failed to reload FAISS index")
     return {"status": "success", "message": "FAISS index reloaded into memory"}
+
+
+@app.post("/internal/clear-cache")
+async def clear_cache(req: ReloadRequest):
+    """Called by the Celery re-ingestion pipeline after plan/FAQ data changes,
+    so cached answers can never outlive the data they were generated from."""
+    if req.token != INTERNAL_RELOAD_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid reload token")
+    semantic_cache.clear()
+    return {"status": "success", "message": "Semantic cache cleared"}
+
+
+@app.get("/metrics")
+async def get_metrics():
+    return metrics.snapshot()
 
 
 @app.get("/health")

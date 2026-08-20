@@ -122,5 +122,13 @@ class SemanticCache:
         except Exception as e:
             print(f"Error adding query to semantic cache: {e}")
 
+    def clear(self):
+        """Wipe all cached entries. Called after plan/FAQ re-ingestion so stale
+        cached answers can never outlive the data they were generated from,
+        instead of only being bounded by the 24h TTL."""
+        self._initialize_empty_cache()
+        self._save_cache()
+        print("Semantic Cache cleared (data re-ingested).")
+
 # Global singleton
 semantic_cache = SemanticCache()

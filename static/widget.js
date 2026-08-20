@@ -65,21 +65,34 @@
   let recognition = null;
   let isListening = false;
 
+  const originalPlaceholder = chatInput.placeholder;
+  let finalTranscript = '';
+
   if (SpeechRecognitionCtor) {
     recognition = new SpeechRecognitionCtor();
     recognition.lang = 'en-IN';
-    recognition.interimResults = false;
+    recognition.interimResults = true; // show a live preview while the user is still speaking
     recognition.maxAlternatives = 1;
 
     recognition.addEventListener('start', () => {
       isListening = true;
+      finalTranscript = '';
       micBtn.classList.add('listening');
+      chatInput.placeholder = 'Listening...';
     });
 
     recognition.addEventListener('result', (event) => {
-      const transcript = event.results[0][0].transcript;
-      chatInput.value = transcript;
-      chatInput.focus();
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interim += transcript;
+        }
+      }
+      // Show live preview (final so far + interim tail) while listening
+      chatInput.value = (finalTranscript + interim).trim();
     });
 
     recognition.addEventListener('error', () => {
@@ -90,6 +103,17 @@
     recognition.addEventListener('end', () => {
       isListening = false;
       micBtn.classList.remove('listening');
+      chatInput.placeholder = originalPlaceholder;
+
+      // Auto-send once the user pauses and recognition naturally ends,
+      // as long as something was actually transcribed.
+      const transcript = finalTranscript.trim() || chatInput.value.trim();
+      if (transcript) {
+        chatInput.value = transcript;
+        handleSendMessage();
+      } else {
+        chatInput.focus();
+      }
     });
 
     micBtn.addEventListener('click', () => {
