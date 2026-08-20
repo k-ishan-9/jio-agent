@@ -10,6 +10,11 @@ beautifulsoup4==4.12.3
 python-dotenv==1.0.1
 celery>=5.3.6
 redis>=5.0.0
+sqlalchemy>=2.0.0
+
+# Testing
+pytest>=8.0.0
+pytest-asyncio>=0.24.0
 
 # Notes:
 # - Exact google-adk / google-genai versions may need adjustment — these

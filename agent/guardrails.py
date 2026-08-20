@@ -1,10 +1,23 @@
 # agent/guardrails.py - AI Guardrails and Query Rewriting for Jio Agent
 
 import logging
+import re
 from retrieval import tools as retrieval_tools
 from config import AGENT_MODEL
 
 logger = logging.getLogger("jio_guardrails")
+
+_CONTROL_CHARS_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
+
+def _sanitize_input(text: str) -> str:
+    """Strip control/null bytes before a user string is interpolated into
+    a prompt. This does not and cannot fully defeat prompt injection (that
+    requires the model itself to hold the line, which is what
+    evaluate_intent's BLOCK verdict is for) — it only removes characters
+    that exist purely to corrupt log output or break out of naive prompt
+    templating."""
+    return _CONTROL_CHARS_RE.sub("", text).strip()
 
 GUARDRAIL_PROMPT = """
 You are a security and topic-compliance filter for a Jio Customer Support AI Assistant.
@@ -40,8 +53,9 @@ def evaluate_intent(query_text: str, history_context: list = None) -> tuple[bool
     Returns (is_safe, refusal_message).
     """
     try:
+        query_text = _sanitize_input(query_text)
         client = retrieval_tools.get_client()
-        
+
         if history_context:
             history_lines = []
             for item in history_context:
@@ -92,6 +106,7 @@ def rewrite_query(query_text: str) -> str:
     Reformulates the query to optimize keyword search in SQL and FAISS.
     """
     try:
+        query_text = _sanitize_input(query_text)
         client = retrieval_tools.get_client()
         prompt = REWRITE_PROMPT.format(query=query_text)
         

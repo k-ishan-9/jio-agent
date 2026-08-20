@@ -60,7 +60,29 @@ def _notify_api_reload():
         logger.warning(f"Could not trigger API hot-reload at {API_BASE_URL}: {e}")
 
 
-@app.task(name="tasks.pipeline.check_plan_changes")
+def _notify_cache_clear():
+    """Notify the FastAPI instance to wipe its semantic cache, so a cached
+    answer can never outlive the plan/FAQ data it was generated from — the
+    24h TTL alone only bounds staleness, this eliminates it on every
+    successful re-ingestion."""
+    try:
+        url = f"{API_BASE_URL}/internal/clear-cache"
+        resp = requests.post(url, json={"token": INTERNAL_RELOAD_TOKEN}, timeout=5)
+        logger.info(f"API cache-clear response: status={resp.status_code}, text={resp.text}")
+    except Exception as e:
+        logger.warning(f"Could not trigger API cache-clear at {API_BASE_URL}: {e}")
+
+
+RETRY_POLICY = dict(
+    autoretry_for=(Exception,),
+    retry_backoff=True,       # exponential backoff between retries
+    retry_backoff_max=600,    # cap at 10 minutes
+    retry_jitter=True,
+    max_retries=3,
+)
+
+
+@app.task(name="tasks.pipeline.check_plan_changes", **RETRY_POLICY)
 def check_plan_changes():
     """Hourly task: checks if Jio plans page has changed."""
     logger.info("Executing hourly check_plan_changes task...")
@@ -80,7 +102,7 @@ def check_plan_changes():
     return {"status": "no_change", "hash": current_hash}
 
 
-@app.task(name="tasks.pipeline.reingest_plans")
+@app.task(name="tasks.pipeline.reingest_plans", **RETRY_POLICY)
 def reingest_plans(new_hash: str = ""):
     """Scrapes latest Jio plans and updates SQLite database."""
     logger.info("Executing reingest_plans task...")
@@ -131,10 +153,11 @@ def reingest_plans(new_hash: str = ""):
         _save_stored_hash(PLAN_HASH_PATH, new_hash)
 
     _notify_api_reload()
+    _notify_cache_clear()
     return {"status": "success", "count": len(plans)}
 
 
-@app.task(name="tasks.pipeline.check_faq_changes")
+@app.task(name="tasks.pipeline.check_faq_changes", **RETRY_POLICY)
 def check_faq_changes():
     """Weekly task: checks if Jio FAQ pages have changed."""
     logger.info("Executing weekly check_faq_changes task...")
@@ -154,7 +177,7 @@ def check_faq_changes():
     return {"status": "no_change", "hash": current_hash}
 
 
-@app.task(name="tasks.pipeline.reingest_faq_content")
+@app.task(name="tasks.pipeline.reingest_faq_content", **RETRY_POLICY)
 def reingest_faq_content(new_hash: str = ""):
     """Scrapes FAQs, embeds with Gemini API, and rebuilds FAISS index."""
     logger.info("Executing reingest_faq_content task...")
@@ -201,4 +224,5 @@ def reingest_faq_content(new_hash: str = ""):
         _save_stored_hash(FAQ_HASH_PATH, new_hash)
 
     _notify_api_reload()
+    _notify_cache_clear()
     return {"status": "success", "vector_count": index.ntotal}

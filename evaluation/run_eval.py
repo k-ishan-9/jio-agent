@@ -3,13 +3,20 @@ evaluation/run_eval.py — test question set, hitting a live API instance.
 
 Usage:
     python evaluation/run_eval.py --base-url http://localhost:8000
+
+Each run is scored and appended to evaluation/eval_history.jsonl, so
+evaluation/generate_dashboard.py can chart pass rate over time instead of
+each run being a one-off artifact nobody looks at again.
 """
 
 import argparse
 import json
+import time
 from pathlib import Path
 
 import requests
+
+HISTORY_PATH = Path(__file__).parent / "eval_history.jsonl"
 
 TEST_QUESTIONS = [
     "What's the cheapest prepaid plan with 5G?",
@@ -41,6 +48,19 @@ TEST_QUESTIONS = [
 ]
 
 
+def _is_pass(result: dict) -> bool:
+    """A question 'passes' if the agent produced a non-empty, tool-grounded
+    answer — i.e. it actually called find_jio_plans or
+    search_jio_faq_and_info rather than guessing, and didn't error out.
+    There's no ground-truth answer key here, so this checks the project's
+    core design guarantee (always grounded, never guessed) rather than
+    exact-match correctness."""
+    if result.get("tool_used") in (None, "ERROR", "none", "unknown"):
+        return False
+    answer = result.get("answer") or ""
+    return bool(answer.strip()) and "Error:" not in answer
+
+
 def run(base_url: str, output_path: str):
     results = []
     for i, question in enumerate(TEST_QUESTIONS):
@@ -60,8 +80,32 @@ def run(base_url: str, output_path: str):
             results.append({"question": question, "answer": None, "tool_used": "ERROR", "error": str(e)})
             print(f"    -> ERROR: {e}")
 
+    for r in results:
+        r["passed"] = _is_pass(r)
+
     Path(output_path).write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\nSaved {len(results)} results to: {output_path}")
+
+    _append_history(results)
+
+
+def _append_history(results: list):
+    passed = sum(1 for r in results if r["passed"])
+    total = len(results)
+    tool_counts = {"sql": 0, "vector": 0, "both": 0, "none": 0, "unknown": 0, "ERROR": 0}
+    for r in results:
+        tool_counts[r.get("tool_used", "unknown")] = tool_counts.get(r.get("tool_used", "unknown"), 0) + 1
+
+    entry = {
+        "timestamp": time.time(),
+        "total": total,
+        "passed": passed,
+        "pass_rate": round(passed / total, 4) if total else 0,
+        "tool_counts": tool_counts,
+    }
+    with open(HISTORY_PATH, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    print(f"Pass rate: {passed}/{total} ({entry['pass_rate']:.0%}). Appended to {HISTORY_PATH}")
 
 
 if __name__ == "__main__":
