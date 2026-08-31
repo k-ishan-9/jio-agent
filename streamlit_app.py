@@ -21,13 +21,17 @@ all of that for whichever deployment target can afford the RAM for it.
 """
 
 import asyncio
+import logging
 import uuid
 
 import streamlit as st
+from fastapi import HTTPException
 
 from config import verify_data_files_exist
 from retrieval import tools as retrieval_tools
 from api.main import _process_ask, AskRequest
+
+logger = logging.getLogger("jio_streamlit")
 
 st.set_page_config(page_title="Jio AI Assistant", page_icon="📶", layout="centered")
 
@@ -92,9 +96,28 @@ if question:
         st.markdown(question)
 
     with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            request = AskRequest(question=question, session_id=st.session_state.session_id)
-            response = asyncio.run(_process_ask(request))
+        try:
+            with st.spinner("Thinking..."):
+                request = AskRequest(question=question, session_id=st.session_state.session_id)
+                response = asyncio.run(_process_ask(request))
+        except HTTPException as e:
+            # _process_ask raises HTTPException for FastAPI's benefit (it
+            # normally converts this into a clean JSON error response) —
+            # called directly here with no FastAPI request context, nothing
+            # else catches it, so Streamlit's default behavior would dump
+            # the raw traceback (including internal file paths) straight
+            # into the chat UI. Show a clean message instead.
+            logger.error(f"_process_ask raised HTTPException {e.status_code}: {e.detail}")
+            answer = f"⚠️ {e.detail}" if e.status_code == 503 else "⚠️ Something went wrong processing that question. Please try again."
+            st.markdown(answer)
+            st.session_state.messages.append({"role": "assistant", "content": answer, "tool_used": None, "sources": []})
+            st.stop()
+        except Exception as e:
+            logger.exception("Unexpected error in Streamlit chat handler")
+            answer = "⚠️ Something went wrong processing that question. Please try again."
+            st.markdown(answer)
+            st.session_state.messages.append({"role": "assistant", "content": answer, "tool_used": None, "sources": []})
+            st.stop()
 
         st.markdown(response.answer)
         if response.tool_used in TOOL_LABELS:
