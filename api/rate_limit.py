@@ -22,8 +22,10 @@ from collections import defaultdict, deque
 import redis
 from fastapi import HTTPException, Request
 
-from api import metrics
+from api import metrics, redis_breaker
 from config import REDIS_URL
+
+_BREAKER_KEY = "rate_limit"
 
 WINDOW_SECONDS = int(os.environ.get("RATE_LIMIT_WINDOW_SECONDS", "60"))
 MAX_REQUESTS_PER_WINDOW = int(os.environ.get("RATE_LIMIT_MAX_REQUESTS", "20"))
@@ -68,10 +70,15 @@ async def enforce_rate_limit(request: Request):
     """FastAPI dependency: raises 429 if the caller has exceeded the window."""
     key = _client_key(request)
 
-    try:
-        allowed = _check_redis(key)
-    except redis.RedisError:
+    if redis_breaker.is_open(_BREAKER_KEY):
         allowed = _check_in_memory(key)
+    else:
+        try:
+            allowed = _check_redis(key)
+            redis_breaker.record_success(_BREAKER_KEY)
+        except redis.RedisError:
+            redis_breaker.record_failure(_BREAKER_KEY)
+            allowed = _check_in_memory(key)
 
     if not allowed:
         metrics.incr("rate_limited")

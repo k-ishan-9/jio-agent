@@ -17,9 +17,11 @@ from collections import Counter
 
 import redis
 
+from api import redis_breaker
 from config import REDIS_URL
 
 REDIS_METRICS_KEY = "jio:metrics:counters"
+_BREAKER_KEY = "metrics"
 
 _redis_client = redis.from_url(REDIS_URL, socket_connect_timeout=1, socket_timeout=1)
 
@@ -29,18 +31,29 @@ _start_time = time.time()
 
 
 def incr(name: str, amount: int = 1):
+    if redis_breaker.is_open(_BREAKER_KEY):
+        with _lock:
+            _counters[name] += amount
+        return
     try:
         _redis_client.hincrby(REDIS_METRICS_KEY, name, amount)
+        redis_breaker.record_success(_BREAKER_KEY)
     except redis.RedisError:
+        redis_breaker.record_failure(_BREAKER_KEY)
         with _lock:
             _counters[name] += amount
 
 
 def _read_counts() -> dict:
+    if redis_breaker.is_open(_BREAKER_KEY):
+        with _lock:
+            return dict(_counters)
     try:
         raw = _redis_client.hgetall(REDIS_METRICS_KEY)
+        redis_breaker.record_success(_BREAKER_KEY)
         return {k.decode(): int(v) for k, v in raw.items()}
     except redis.RedisError:
+        redis_breaker.record_failure(_BREAKER_KEY)
         with _lock:
             return dict(_counters)
 
