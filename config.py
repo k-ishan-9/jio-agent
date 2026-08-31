@@ -66,8 +66,23 @@ API_KEY = os.environ.get("API_KEY", "")
 SESSIONS_DB_URL = os.environ.get("SESSIONS_DB_URL", f"sqlite:///{DATA_ROOT / 'sessions.db'}")
 
 # --- Scraper target URLs ---
-JIO_PLANS_URL = os.environ.get("JIO_PLANS_URL", "https://www.jio.com/mobile/prepaid-plans")
-JIO_FAQ_URL = os.environ.get("JIO_FAQ_URL", "https://www.jio.com/help/faq")
+# Human-facing pages (used to build reference URLs shown to users).
+JIO_PLANS_URL = os.environ.get(
+    "JIO_PLANS_URL",
+    "https://www.jio.com/selfcare/plans/mobility/prepaid-plans-list/?category=Popular%20Plans&categoryId=UG9wdWxhciBQbGFucw==",
+)
+JIO_FAQ_URL = os.environ.get("JIO_FAQ_URL", "https://www.jio.com/help/faq/mobile/")
+
+# The pages above are client-rendered Next.js shells with no data in the
+# server HTML (confirmed empty __NEXT_DATA__.props.pageProps) — the old
+# JIO_PLANS_URL also 404'd outright. These are the underlying public JSON
+# APIs the frontend itself calls, found via the network tab; scraping and
+# change-detection hit these directly instead of parsing rendered HTML.
+JIO_PLANS_API_URL = os.environ.get(
+    "JIO_PLANS_API_URL",
+    "https://www.jio.com/api/jio-mdmdata-service/mdmdata/recharge/plans?productType=MOBILITY&billingType=1",
+)
+JIO_FAQ_API_URL = os.environ.get("JIO_FAQ_API_URL", "https://www.jio.com/jcms-api/jio-faqs")
 
 # --- Model config ---
 EMBEDDING_MODEL = "gemini-embedding-001"
