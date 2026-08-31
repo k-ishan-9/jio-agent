@@ -1,3 +1,14 @@
+---
+title: Jio AI Agent
+emoji: 📶
+colorFrom: blue
+colorTo: red
+sdk: docker
+dockerfile: deploy/Dockerfile
+app_port: 7860
+pinned: false
+---
+
 # 🤖 Jio AI Agent — Production-Grade Hybrid RAG Customer Assistant
 
 An enterprise-ready, high-performance RAG (Retrieval-Augmented Generation) AI assistant designed specifically for Reliance Jio telecom, broadband, business services, and digital apps ecosystem.
