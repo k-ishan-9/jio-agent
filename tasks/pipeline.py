@@ -5,6 +5,7 @@ tasks/pipeline.py — Celery tasks for plan and FAQ change checking, re-ingestio
 import json
 import logging
 import sqlite3
+import time
 import numpy as np
 import faiss
 import requests
@@ -27,6 +28,8 @@ from config import (
     GOOGLE_API_KEY,
     EMBEDDING_MODEL,
     EMBEDDING_DIM,
+    EMBEDDING_BATCH_SIZE,
+    EMBEDDING_SLEEP_BETWEEN_BATCHES,
     API_BASE_URL,
     INTERNAL_RELOAD_TOKEN,
 )
@@ -186,21 +189,49 @@ def reingest_faq_content(new_hash: str = ""):
         logger.warning("No FAQ content scraped. Aborting vector index update.")
         return {"status": "failed", "reason": "empty_scraped_data"}
 
-    # Generate embeddings via Google Gemini API
+    # Generate embeddings via Google Gemini API, batched and paced (using the
+    # same EMBEDDING_BATCH_SIZE / EMBEDDING_SLEEP_BETWEEN_BATCHES knobs the
+    # original data-build pipeline was tuned with) rather than firing all
+    # ~500 requests back-to-back — doing that reliably triggers a connection
+    # reset from the API. A batch that still fails after its own retries is
+    # skipped (logged) rather than aborting the whole re-ingestion, so one
+    # bad batch doesn't throw away everything embedded so far.
     client = genai.Client(api_key=GOOGLE_API_KEY)
     embeddings = []
     metadata = {}
+    next_idx = 0
 
-    for idx, faq in enumerate(faqs):
-        text_to_embed = f"{faq['title']}\n{faq['content']}"
-        res = client.models.embed_content(
-            model=EMBEDDING_MODEL,
-            contents=[text_to_embed],
-            config=types.EmbedContentConfig(output_dimensionality=EMBEDDING_DIM),
-        )
-        vec = np.array(res.embeddings[0].values, dtype="float32")
-        embeddings.append(vec)
-        metadata[str(idx)] = faq
+    def _embed_batch_with_retry(texts, attempts=3):
+        for attempt in range(attempts):
+            try:
+                return client.models.embed_content(
+                    model=EMBEDDING_MODEL,
+                    contents=texts,
+                    config=types.EmbedContentConfig(output_dimensionality=EMBEDDING_DIM),
+                )
+            except Exception as e:
+                if attempt == attempts - 1:
+                    raise
+                wait = 2 ** attempt * 2
+                logger.warning(f"Embedding batch failed (attempt {attempt+1}/{attempts}): {e} — retrying in {wait}s")
+                time.sleep(wait)
+
+    for batch_start in range(0, len(faqs), EMBEDDING_BATCH_SIZE):
+        batch = faqs[batch_start:batch_start + EMBEDDING_BATCH_SIZE]
+        texts = [f"{faq['title']}\n{faq['content']}" for faq in batch]
+        try:
+            res = _embed_batch_with_retry(texts)
+        except Exception as e:
+            logger.error(f"Skipping FAQ batch {batch_start}-{batch_start+len(batch)} after retries: {e}")
+            continue
+
+        for faq, emb in zip(batch, res.embeddings):
+            embeddings.append(np.array(emb.values, dtype="float32"))
+            metadata[str(next_idx)] = faq
+            next_idx += 1
+
+        if batch_start + EMBEDDING_BATCH_SIZE < len(faqs):
+            time.sleep(EMBEDDING_SLEEP_BETWEEN_BATCHES)
 
     if not embeddings:
         return {"status": "failed", "reason": "no_embeddings_generated"}
