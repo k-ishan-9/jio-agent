@@ -1,0 +1,31 @@
+# deploy/Dockerfile.render — lean single-process build for Render's free
+# tier (0.1 CPU / 512MB RAM). Runs only the FastAPI API — no Redis, no
+# Celery worker, no Celery beat, since three separate Python processes
+# each loading the full google-adk/google-genai/faiss/numpy stack blows
+# past 512MB well before Redis itself is even a factor (confirmed via an
+# actual OOM kill on deploy/Dockerfile's all-in-one supervisord setup).
+#
+# Trade-off: the auto-refresh scraping pipeline (Celery beat) does not
+# run here. The bot serves fine from the data baked into this image at
+# build time; refreshing it means re-running the re-ingestion tasks
+# manually (or redeploying with updated data files) rather than it
+# happening on a schedule. Rate limiting and metrics still work — they
+# fall back to in-process storage automatically when Redis isn't
+# reachable (see api/rate_limit.py, api/metrics.py).
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Render assigns a dynamic port via $PORT; fall back to 8000 for local
+# testing where $PORT isn't set.
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
