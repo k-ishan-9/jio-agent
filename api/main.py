@@ -12,6 +12,7 @@ import logging
 import sqlite3
 import time
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import List, Optional
 
@@ -57,7 +58,21 @@ logger = logging.getLogger("jio_agent_api")
 APP_NAME = "jio_agent_api"
 USER_ID = "api_user"
 
-app = FastAPI(title="Jio AI Agent API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Modern replacement for the deprecated @app.on_event("startup") — that
+    # decorator relies on Starlette's legacy on_startup= Router kwarg, which
+    # newer Starlette releases have dropped entirely (broke outright once a
+    # newer Starlette landed as a transitive dependency of an unrelated
+    # package). lifespan is the officially supported mechanism either way.
+    verify_data_files_exist()
+    retrieval_tools.setup()
+    logger.info("Jio AI Agent API startup complete")
+    yield
+
+
+app = FastAPI(title="Jio AI Agent API", lifespan=lifespan)
 
 # Persisted to SQLite so conversation history survives process restarts and
 # is shared across multiple API instances, instead of living only in memory.
@@ -67,13 +82,6 @@ runner = Runner(agent=root_agent, app_name=APP_NAME, session_service=session_ser
 STATIC_DIR = Path(__file__).parent.parent / "static"
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-
-
-@app.on_event("startup")
-async def startup():
-    verify_data_files_exist()
-    retrieval_tools.setup()
-    logger.info("Jio AI Agent API startup complete")
 
 
 @app.get("/", response_class=HTMLResponse)
