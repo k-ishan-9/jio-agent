@@ -1,4 +1,4 @@
-fastapi==0.115.0
+fastapi>=0.115.0
 uvicorn[standard]>=0.34.0
 pydantic==2.9.2
 faiss-cpu==1.12.0
@@ -12,6 +12,10 @@ python-dotenv==1.0.1
 celery>=5.3.6
 redis>=5.0.0
 sqlalchemy>=2.0.0
+
+# Streamlit Community Cloud deployment (streamlit_app.py) — not needed for
+# the FastAPI app itself, only pulled in when deploying that entrypoint.
+streamlit>=1.38.0
 
 # Testing
 pytest>=8.0.0
